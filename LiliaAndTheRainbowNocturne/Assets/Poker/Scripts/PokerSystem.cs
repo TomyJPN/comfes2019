@@ -14,102 +14,105 @@ using System.Collections.Generic;
 // ♣（クラブ）　： 41 42 43 44 45 46 47 48 49 4A 4B 4C 4D
 //
 
-public class PorkerSystem {
+namespace PokerSystem {
 
-  /// <summary>
-  /// 手役
-  /// </summary>
-  public enum PokerHand {
-    RoyalStraightFlush,
-    StraightFlush,
-    FourOfAKind,
-    FullHouse,
-    Flush,
-    Straight,
-    ThreeOfAKind,
-    TwoPair,
-    OnePair,
-    NoPair,
-  }
+  public class PorkerSystem {
 
-  /// <summary>
-  /// 手役の判断
-  /// </summary>
-  /// <param name="cards">手札</param>
-  /// <returns>手役</returns>
-  /// 
+    /// <summary>
+    /// 手役
+    /// </summary>
+    public enum PokerHand {
+      RoyalStraightFlush,
+      StraightFlush,
+      FourOfAKind,
+      FullHouse,
+      Flush,
+      Straight,
+      ThreeOfAKind,
+      TwoPair,
+      OnePair,
+      NoPair,
+    }
 
-  public PokerHand Judge(List<int> cards) {
-    // カードが２枚以上ない場合、判定なしで不成立
-    if (cards.Count() < 2) return PokerHand.NoPair;
+    /// <summary>
+    /// 手役の判断
+    /// </summary>
+    /// <param name="cards">手札</param>
+    /// <returns>手役</returns>
+    /// 
 
-    // ①ペア系の判定
-    // 各カードとペアになるカードの枚数をカウントする。
-    // 枚数に応じてペア系の役が確定する。
-    int count = 0;
-    for (int i = 0; i < cards.Count() - 1; i++) {
-      for (int j = i + 1; j < cards.Count(); j++) {
-        if ((cards[i] & 0xF) == (cards[j] & 0xF)) {
-          count++;
+    public static PokerHand Judge(List<int> cards) {  //静的にしたらエラー消えた
+      // カードが２枚以上ない場合、判定なしで不成立
+      if (cards.Count() < 2) return PokerHand.NoPair;
+
+      // ①ペア系の判定
+      // 各カードとペアになるカードの枚数をカウントする。
+      // 枚数に応じてペア系の役が確定する。
+      int count = 0;
+      for (int i = 0; i < cards.Count() - 1; i++) {
+        for (int j = i + 1; j < cards.Count(); j++) {
+          if ((cards[i] & 0xF) == (cards[j] & 0xF)) {
+            count++;
+          }
         }
       }
-    }
-    // 成立した役を返す
-    switch (count) {
-      case 1: return PokerHand.OnePair;
-      case 2: return PokerHand.TwoPair;
-      case 3: return PokerHand.ThreeOfAKind;
-      case 4: return PokerHand.FullHouse;
-      case 6: return PokerHand.FourOfAKind;
-    }
-
-    // ストレート系・フラッシュ系はカード５枚でないと不成立
-    if (cards.Count() != 5) return PokerHand.NoPair;
-
-    // ②ストレート系の判定
-    bool straight = false;
-    bool royal = false;
-
-    // ５つの数字の差が４以内であればストレート成立
-    {
-      int max = cards.Max(card => card & 0x0F);
-      int min = cards.Min(card => card & 0x0F);
-      if (max - min <= 4) {
-        // ストレート成立
-        straight = true;
+      // 成立した役を返す
+      switch (count) {
+        case 1: return PokerHand.OnePair;
+        case 2: return PokerHand.TwoPair;
+        case 3: return PokerHand.ThreeOfAKind;
+        case 4: return PokerHand.FullHouse;
+        case 6: return PokerHand.FourOfAKind;
       }
-    }
-    // ストレート不成立の場合はロイヤルストレートの判断を行う。
-    // エース(A)を14として判定し直す
-    if (straight == false) {
-      int max = cards.Max(card => ((card & 0x0F) == 1) ? 14 : (card & 0x0F));
-      int min = cards.Min(card => ((card & 0x0F) == 1) ? 14 : (card & 0x0F));
-      if (max - min <= 4) {
-        // ロイヤルストレート成立
-        straight = true;
-        royal = true;
+
+      // ストレート系・フラッシュ系はカード５枚でないと不成立
+      if (cards.Count() != 5) return PokerHand.NoPair;
+
+      // ②ストレート系の判定
+      bool straight = false;
+      bool royal = false;
+
+      // ５つの数字の差が４以内であればストレート成立
+      {
+        int max = cards.Max(card => card & 0x0F);
+        int min = cards.Min(card => card & 0x0F);
+        if (max - min <= 4) {
+          // ストレート成立
+          straight = true;
+        }
       }
-    }
-
-    // ③フラッシュ系の判定
-    bool flush = true;
-
-    // ５つのスートが全て同じならフラッシュ成立
-    for (int i = 1; i < cards.Count(); i++) {
-      if ((cards[0] & 0xF0) != (cards[i] & 0xF0)) {
-        flush = false;
-        break;
+      // ストレート不成立の場合はロイヤルストレートの判断を行う。
+      // エース(A)を14として判定し直す
+      if (straight == false) {
+        int max = cards.Max(card => ((card & 0x0F) == 1) ? 14 : (card & 0x0F));
+        int min = cards.Min(card => ((card & 0x0F) == 1) ? 14 : (card & 0x0F));
+        if (max - min <= 4) {
+          // ロイヤルストレート成立
+          straight = true;
+          royal = true;
+        }
       }
+
+      // ③フラッシュ系の判定
+      bool flush = true;
+
+      // ５つのスートが全て同じならフラッシュ成立
+      for (int i = 1; i < cards.Count(); i++) {
+        if ((cards[0] & 0xF0) != (cards[i] & 0xF0)) {
+          flush = false;
+          break;
+        }
+      }
+
+      // 成立した役を返す
+      if (royal && flush) return PokerHand.RoyalStraightFlush;
+      if (straight && flush) return PokerHand.StraightFlush;
+      if (flush) return PokerHand.Flush;
+      if (straight) return PokerHand.Straight;
+
+      // 何も成立しなかった
+      return PokerHand.NoPair;
     }
 
-    // 成立した役を返す
-    if (royal && flush) return PokerHand.RoyalStraightFlush;
-    if (straight && flush) return PokerHand.StraightFlush;
-    if (flush) return PokerHand.Flush;
-    if (straight) return PokerHand.Straight;
-
-    // 何も成立しなかった
-    return PokerHand.NoPair;
   }
-
 }
