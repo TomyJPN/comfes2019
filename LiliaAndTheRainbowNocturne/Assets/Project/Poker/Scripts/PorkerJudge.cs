@@ -1,18 +1,53 @@
-﻿using System.Collections;
+﻿/*  http://www5a.biglobe.ne.jp/~iwase47/09cma1/poker2.c より
+    一人で遊ぶポーカーのプログラム（ジョーカー入り）
+
+
+        ジョーカーを一枚使う。最初にコインを何枚か賭ける。五枚のカードが手札と
+        して配られ、そのうちの零枚から五枚を選んで、一度だけ交換すると、交換後
+        の手札の役に応じた枚数のコインがもらえる。これのくり返し。
+
+        トランプカードは、0 から 51 の数で表す。0 から 12 がスペードの A から K
+        を、13 から 25 がハートの A から K を、26 から 38 がクラブの A から K
+        を、39 から 51 がダイヤモンドの A から K を意味する。（こう決めると、数
+        を 13 で割った商がスートを、余りがランクを表すことになる。これは、昔
+        ながらの決まったやり方の一つらしい。）
+
+        内部では、ジョーカーは 52 で表している。また、ジョーカーはその時点での
+        手札に含まれないどんなカードの代わりにもなる、というルールを採用した。
+        役の判定に当っては、ジョーカーを 52 枚のカードすべてで順に置き換えて、
+        できた役のうち最高の役になったものを役としている。だから、ジョーカー
+        を手札に含まれているカードで置き換えてできる役も含めている。（これでも
+        同じ結果になるはずである。）
+
+        ここまでで習ったことだけを使って書いてある。Ｃ言語の全貌を学べばもっと
+        うまく書ける部分を含んでいる。
+
+        （画面制御エスケープシーケンスは使っていない。）
+
+        poker.c からの、その他の改変箇所は以下の通り。
+
+        最初にカードが配られたときにも役を表示するようにした。
+
+        乱数の種に、現在時刻だけでなく持っているコインの枚数も関係するように
+        した。（前のままでは、二人で同時に動かして一人が全カードを交換し、それ
+        を見てもう一人が交換するカードを選ぶという裏技ができたので。）
+
+        当ったコインの枚数が、行頭でない位置に表示されるようにした。次に行頭
+        から出力される、持っているコインの枚数と間違える場合があったため。
+
+        交換するカードを入力し、Enter を押した時点で、再度、乱数が初期化される
+        ようにした。そのほうが、自分で運を切りひらいた感じが強まると思うので。
+
+        コイン枚数がオーバーフローして負になった場合も破産メッセージが出るよう
+        にした。
+*/
+
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using System.Linq;
-using PokerSystem;
-using System.Text;
 
-public class PokerTest : MonoBehaviour {
-  InputField inputField;
-
-  [SerializeField]
-  Text resultText;
-
-  //  //define
+public class PorkerJudge : MonoBehaviour {
+  //define
   int EMPTY = -1;
   int JOKER = 52;
 
@@ -21,111 +56,19 @@ public class PokerTest : MonoBehaviour {
   bool[] a = new bool[6];       /* hand[i] を新たにひくなら a[i] には true を、そうでなければ */
                                 /* false を入れる。a[0] は使わない */
 
-  // Start is called before the first frame update
   void Start() {
-    inputField = GetComponent<InputField>();
+
   }
 
-  // Update is called once per frame
   void Update() {
 
   }
-
-  public void InputLogger() {
-    int i, x, y;
-    int coins, bet, get;
-    int COINS = 100;
-
-    //for (coins = COINS; coins > 0;) {
-    /*
-    printf("--------------------\n");   //新しいゲームの始まりを示す線 
-    for (bet = -1; bet < 0;) {
-      printf("%d 枚のコインを持っています.\n", coins);
-      printf("何枚賭けますか? （0 を入力すれば終了）＞");
-      scanf("%d", &bet);
-      if (bet < 0) {
-        printf("負の枚数は賭けられません.\n");
-      }
-      if (bet > coins) {
-        printf("そんなに持っていませんよ.\n");
-        bet = -1;                   //これでやり直すことになる 
-      }
-    }*/
-    //if (bet == 0) {
-    //coins = 0;                      /* これでプログラムの終了へ */
-    //}
-    // else {
-    initcard();                     /* カードの初期化 */
-
-    for (i = 1; i <= 5; i++) {      /* 最初は五枚ひくので全部 YES */
-      a[i] = true;
-    }
-    draw();                         /* カードをひく */
-
-    /* 次の五行はデバッグの跡。復活させればインチキも可能！ */
-    /*hand[1] = 0;
-    hand[2] = 13;
-    hand[3] = 26;
-    hand[4] = 39;
-    hand[5] = JOKER;*/
-
-    printhands();                   /* 手札を画面表示 */
-    Debug.Log( printresult(analyse0()));        /* 役を画面表示 */
-
-    Debug.Log("どれを交換しますか？ --- 例：1, 2, 5 枚目");
-    Debug.Log("なら 125 と入力。一枚も変えないなら 0 と入力\n");
-    x = int.Parse(inputField.text);
-
-    /* ユーザが x に入力した値を分析し、i 枚目を交換するなら a[i] に */
-    /* YES が、交換しないなら NO がはいるようにする。次とその次の    */
-    /* ループでそうなるんだけど、どうしてかは自分で考えて。          */
-    for (i = 1; i <= 5; i++) {
-      a[i] = false;
-    }
-    for (; x != 0; x = x / 10) {
-      y = x % 10;
-      if (y >= 1 && y <= 5) {
-        a[y] = true;
-      }
-    }
-    draw();                         /* カードを交換する（実際はひく）*/
-    printhands();                   /* 手札を画面表示 */
-
-    get = analyse0();               /* 手札を分析。倍率が返ってくる */
-    Debug.Log( printresult(get));               /* 結果を出力 */
-
-    if (get > 0) {
-      Debug.Log("あたり");
-     // Debug.Log((get * bet) + "枚のコインが当たりました.\n");
-    }
-    else {
-      Debug.Log("残念でした");
-    }
-   // coins = coins + (get - 1) * bet;
-    //if (coins <= 0) {
-     // printf("あなたは破産しました....\n");
-   // }
-    //}
-    // }
-
-    InitInputField();
-  }
-  void InitInputField() {
-
-    // 値をリセット
-    inputField.text = "";
-
-    // フォーカス
-    inputField.ActivateInputField();
-  }
-
 
   /* card[ ]（カード）を初期化する */
   void initcard() {
     int i;
 
     for (i = 0; i <= 52; i++) {     /* true はまだそのカードが引かれていない */
-      
       card[i] = true;              /* ことを示す印                         */
     }
   }
@@ -378,7 +321,8 @@ public class PokerTest : MonoBehaviour {
     else if (get == 500) {
       return "ロイヤルストレートフラッシュです!!!!!  ";
     }
-    else return "ノーペアです";
+    else return "エラー";
   }
-  
 }
+
+
