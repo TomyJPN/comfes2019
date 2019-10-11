@@ -369,6 +369,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   resultText: {fileID: 1742471612}
   PlayerHands: {fileID: 268903088}
+  playerHandsImage:
+  - {fileID: 1345784065}
+  - {fileID: 1005891552}
+  - {fileID: 637580131}
+  - {fileID: 1543333495}
+  - {fileID: 1714218519}
 --- !u!4 &419591600
 Transform:
   m_ObjectHideFlags: 0
@@ -400,7 +406,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &608099247
 RectTransform:
   m_ObjectHideFlags: 0
@@ -536,6 +542,57 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 637580129}
   m_CullTransparentMesh: 0
+--- !u!1 &670486557
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 670486559}
+  - component: {fileID: 670486558}
+  m_Layer: 0
+  m_Name: AppManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &670486558
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 670486557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e15338e468c9791499402022c2c7b57c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  messageBoxPrefab: {fileID: 8234976410269403423, guid: 4e4546578327eee449fc099fd4ce8871,
+    type: 3}
+  loadingUiPrefab: {fileID: 6097060855681232369, guid: 61b1f289dbf12e745b5d79653db61f2f,
+    type: 3}
+  baseUrl: http://ik1-323-21780.vs.sakura.ne.jp:3001
+  isRequestFinished: 0
+  httpResponseData: 
+  httpResponseCode: 0
+--- !u!4 &670486559
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 670486557}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -645,7 +702,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &761197555
 RectTransform:
   m_ObjectHideFlags: 0

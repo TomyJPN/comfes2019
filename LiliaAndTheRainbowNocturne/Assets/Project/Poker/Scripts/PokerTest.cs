@@ -14,7 +14,9 @@ public class PokerTest : MonoBehaviour {
 
   [SerializeField]
   GameObject PlayerHands;
-  List<Sprite> playerHandsImage=new List<Sprite>();
+
+  [SerializeField]
+  List<Image> playerHandsImage=new List<Image>();
 
   //  //define
   int EMPTY = -1;
@@ -33,10 +35,10 @@ public class PokerTest : MonoBehaviour {
     inputField = GetComponent<InputField>();
 
     int count = 0;
-    foreach (Transform child in PlayerHands.transform) {
-      playerHandsImage.Add(child.GetComponent<Image>().sprite);
-      count++;
-    }
+    //foreach (Transform child in PlayerHands.transform) {
+    //  playerHandsImage.Add(child.GetComponent<Image>());
+    //  count++;
+    //}
   }
 
   // Update is called once per frame
@@ -51,7 +53,7 @@ public class PokerTest : MonoBehaviour {
     }
     draw();                         /* カードをひく */
     printhands();
-    Debug.Log(printresult(analyse0()));        /* 役を画面表示 */
+    AppManager.Instance.viewMessage(printresult(analyse0()));        /* 役を画面表示 */
   }
 
   public void InputLogger() {
@@ -230,8 +232,8 @@ public class PokerTest : MonoBehaviour {
     Debug.Log(print);
 
     for(int j = 0; j < 5; j++) {
-      playerHandsImage[j] = Resources.Load<Sprite>("images/trump/"+hand[j].ToString());
-      Debug.Log("images/trump/" + hand[j]);
+      playerHandsImage[j].sprite = Resources.Load<Sprite>("images/trump/"+hand[j+1].ToString());
+      Debug.Log("images/trump/" + hand[j+1]);
     }
 
     return print;
