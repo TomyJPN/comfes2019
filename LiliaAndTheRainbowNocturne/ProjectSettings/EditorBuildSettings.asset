@@ -4,5 +4,32 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Project/Title/Title.unity
+    guid: 33baa436fde4ccf43b9547a6fe36bff9
+  - enabled: 1
+    path: Assets/Project/Home/Home.unity
+    guid: 5ce35aa530d9e084fb2c8d8cffa5d077
+  - enabled: 1
+    path: Assets/Project/Chara/Chara.unity
+    guid: f5511363dbf85af419a8a7e6d1a85ac8
+  - enabled: 1
+    path: Assets/Project/Story/StoryMenu.unity
+    guid: 2e29ab6af3371d84da5ebf6ed6fc9833
+  - enabled: 1
+    path: Assets/Project/Story/Story.unity
+    guid: ead6b7a47a239d14baf19c4f6c2d9c33
+  - enabled: 1
+    path: Assets/Project/Quset/Quest.unity
+    guid: 4bd5fff5e2d03b44480f6f71e7ba2f08
+  - enabled: 1
+    path: Assets/Project/Poker/Porker.unity
+    guid: 9fc0d4010bbf28b4594072e72b8655ab
+  - enabled: 1
+    path: Assets/Project/Gatya/Gatya.unity
+    guid: 9b3dbbb415018cf4ab45d8993c1d77b7
+  - enabled: 1
+    path: Assets/Project/Menu/Menu.unity
+    guid: 80b09c14ee2c4ff4dbee8b6567667022
   m_configObjects: {}
