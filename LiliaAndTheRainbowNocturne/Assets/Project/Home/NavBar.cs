@@ -3,59 +3,47 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class NavBar : SingletonMonoBehaviour<NavBar> {
-  public void Awake() {
-    if (this != Instance) {
-      Destroy(this);
-      return;
-    }
-    DontDestroyOnLoad(this.gameObject);
-  }
-  
+public class NavBar : MonoBehaviour {
+  float fadeSpeed=0.25f;
+
   void Start() {
 
   }
 
   public void onHomeBtn() {
     if (SceneManager.GetActiveScene().name == "Home") {
-      Debug.Log(SceneManager.GetActiveScene().name);
       return;
     }
-    SceneManager.LoadScene("Home");
+    FadeManager.Instance.LoadScene("Home", fadeSpeed);
   }
   public void onCharaBtn() {
     if (SceneManager.GetActiveScene().name == "Chara") {
-      Debug.Log(SceneManager.GetActiveScene().name);
       return;
     }
-    SceneManager.LoadScene("Chara");
+    FadeManager.Instance.LoadScene("Chara", fadeSpeed);
   }
   public void onStoryBtn() {
     if (SceneManager.GetActiveScene().name == "StoryMenu") {
-      Debug.Log(SceneManager.GetActiveScene().name);
       return;
     }
-    SceneManager.LoadScene("StoryMenu");
+    FadeManager.Instance.LoadScene("StoryMenu", fadeSpeed);
   }
   public void onQuestBtn() {
     if (SceneManager.GetActiveScene().name == "Quest") {
-      Debug.Log(SceneManager.GetActiveScene().name);
       return;
     }
-    SceneManager.LoadScene("Quest");
+    FadeManager.Instance.LoadScene("Quest", fadeSpeed);
   }
   public void onGatyaBtn() {
     if (SceneManager.GetActiveScene().name == "Gatya") {
-      Debug.Log(SceneManager.GetActiveScene().name);
       return;
     }
-    SceneManager.LoadScene("Gatya");
+    FadeManager.Instance.LoadScene("Gatya", fadeSpeed);
   }
   public void onMenuBtn() {
     if (SceneManager.GetActiveScene().name == "Menu") {
-      Debug.Log(SceneManager.GetActiveScene().name);
       return;
     }
-    SceneManager.LoadScene("Menu");
+    FadeManager.Instance.LoadScene("Menu", fadeSpeed);
   }
 }
