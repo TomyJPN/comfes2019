@@ -10,31 +10,41 @@ public class PokerTest : MonoBehaviour {
   InputField inputField;
 
   [SerializeField]
-  Text resultText;
-
-  [SerializeField]
   GameObject PlayerHands;
 
   [SerializeField]
-  List<Image> playerHandsImage=new List<Image>();
+  List<Image> playerHandsImage = new List<Image>();
 
-  //  //define
-  int EMPTY = -1;
-  /// <summary>
-  /// 52
-  /// </summary>
-  int JOKER = 52;
+  [SerializeField]
+  List<Image> enemyHandsImage = new List<Image>();
+
+  [SerializeField]
+  InputField debugInput;
+
+  [SerializeField]
+  Text infoText;
+
+
+  //define
+  const int EMPTY = -1;
+  const int JOKER = 52;
+  const int PLAYER = 0;
+  const int ENEMY = 1;
 
   bool[] card = new bool[53];   /* ジョーカーを使うので 53 枚 */
-  int[] hand = new int[6];    /* 手札。hand[0] は使わない */
-  bool[] a = new bool[6];       /* hand[i] を新たにひくなら a[i] には true を、そうでなければ */
-                                /* false を入れる。a[0] は使わない */
+  int[,] hand = new int[2, 6];    /* 手札。hand[0] は使わない */
+  bool[,] a = new bool[2, 6];         /* hand[i] を新たにひくなら a[i] には true を、そうでなければ */
+                                      /* false を入れる。a[0] は使わない */
+  int[] coin = new int[2]; //コイン
 
   // Start is called before the first frame update
   void Start() {
     inputField = GetComponent<InputField>();
 
     int count = 0;
+
+    coin[PLAYER] = 250;
+    coin[ENEMY] = 250;
     //foreach (Transform child in PlayerHands.transform) {
     //  playerHandsImage.Add(child.GetComponent<Image>());
     //  count++;
@@ -46,14 +56,61 @@ public class PokerTest : MonoBehaviour {
 
   }
 
-  public void onDrawBtn() {
-    initcard();
+  IEnumerator Game() {
+    infoText.text = "";
+
+    int tableCoin=0;
+    initcard(); //山札初期化
+
+    Ante(10); //アンティ
+    tableCoin += 20;
+
+    //手札を引く
     for (int i = 1; i <= 5; i++) {      /* 最初は五枚ひくので全部 YES */
-      a[i] = true;
+      a[PLAYER, i] = true;
+      a[ENEMY, i] = true;
     }
-    draw();                         /* カードをひく */
-    printhands();
-    AppManager.Instance.viewMessage(printresult(analyse0()));        /* 役を画面表示 */
+    draw(PLAYER);
+    draw(ENEMY);
+    infoText.text += "-プレイヤー-\n";
+    printhands(PLAYER);
+    infoText.text+=printresult(analyse0(PLAYER));        /* 役を画面表示 */
+    infoText.text += "\n-相手-\n";
+    printhands(ENEMY);
+    infoText.text+= printresult(analyse0(ENEMY));        /* 役を画面表示 */
+
+    AppManager.Instance.viewMessage("\n1st ベッティングラウンド");
+    //チェック　ベット100　フォールド
+    Debug.Log("プレイヤー: f,b,c");
+    infoText.text += "プレイヤー：フォルドorベットorチェック\n";
+    yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));  //エンターまで待ち
+    if (debugInput.text == "f") {
+      AppManager.Instance.viewMessage("フォールド 敵+"+tableCoin);
+      Fold(PLAYER, tableCoin);
+    }
+
+  }
+
+  //アンティ
+  void Ante(int fee) {
+    coin[PLAYER] -= fee;
+    coin[ENEMY] -= fee;
+  }
+
+  //フォルド
+  void Fold(int loser,int tableCoin) {
+    if (loser == PLAYER) {
+      coin[ENEMY] += tableCoin;
+    }
+    else if (loser == ENEMY) {
+      coin[PLAYER] += tableCoin;
+    }
+    else Debug.LogError("不正");
+  }
+
+
+  public void onDrawBtn() {
+    StartCoroutine(Game());
   }
 
   public void InputLogger() {
@@ -83,9 +140,10 @@ public class PokerTest : MonoBehaviour {
     initcard();                     /* カードの初期化 */
 
     for (i = 1; i <= 5; i++) {      /* 最初は五枚ひくので全部 YES */
-      a[i] = true;
+      a[0, i] = true;
+      a[1, i] = true;
     }
-    draw();                         /* カードをひく */
+    draw(0);                         /* カードをひく */
 
     /* 次の五行はデバッグの跡。復活させればインチキも可能！ */
     /*hand[1] = 0;
@@ -94,8 +152,8 @@ public class PokerTest : MonoBehaviour {
     hand[4] = 39;
     hand[5] = JOKER;*/
 
-    printhands();                   /* 手札を画面表示 */
-    Debug.Log( printresult(analyse0()));        /* 役を画面表示 */
+    printhands(0);                   /* 手札を画面表示 */
+    Debug.Log(printresult(analyse0(0)));        /* 役を画面表示 */
 
     Debug.Log("どれを交換しますか？ --- 例：1, 2, 5 枚目");
     Debug.Log("なら 125 と入力。一枚も変えないなら 0 と入力\n");
@@ -105,31 +163,31 @@ public class PokerTest : MonoBehaviour {
     /* YES が、交換しないなら NO がはいるようにする。次とその次の    */
     /* ループでそうなるんだけど、どうしてかは自分で考えて。          */
     for (i = 1; i <= 5; i++) {
-      a[i] = false;
+      a[0, i] = false;
     }
     for (; x != 0; x = x / 10) {
       y = x % 10;
       if (y >= 1 && y <= 5) {
-        a[y] = true;
+        a[0, y] = true;
       }
     }
-    draw();                         /* カードを交換する（実際はひく）*/
-    printhands();                   /* 手札を画面表示 */
+    draw(0);                         /* カードを交換する（実際はひく）*/
+    printhands(0);                   /* 手札を画面表示 */
 
-    get = analyse0();               /* 手札を分析。倍率が返ってくる */
-    Debug.Log( printresult(get));               /* 結果を出力 */
+    get = analyse0(0);               /* 手札を分析。倍率が返ってくる */
+    Debug.Log(printresult(get));               /* 結果を出力 */
 
     if (get > 0) {
       Debug.Log("あたり");
-     // Debug.Log((get * bet) + "枚のコインが当たりました.\n");
+      // Debug.Log((get * bet) + "枚のコインが当たりました.\n");
     }
     else {
       Debug.Log("残念でした");
     }
-   // coins = coins + (get - 1) * bet;
+    // coins = coins + (get - 1) * bet;
     //if (coins <= 0) {
-     // printf("あなたは破産しました....\n");
-   // }
+    // printf("あなたは破産しました....\n");
+    // }
     //}
     // }
 
@@ -150,7 +208,7 @@ public class PokerTest : MonoBehaviour {
     int i;
 
     for (i = 0; i <= 52; i++) {     /* true はまだそのカードが引かれていない */
-      
+
       card[i] = true;              /* ことを示す印                         */
     }
   }
@@ -162,15 +220,15 @@ public class PokerTest : MonoBehaviour {
   /* card[n] は true から false に変える。false のカードを選んでしまったら、再度     */
   /* ひく。このゲームでは最大で 10 枚のカードしか使わないので、このやり方で   */
   /* まず大丈夫であろう。                                                     */
-  public void draw() {
+  public void draw(int pNum) {
     int i, n;
 
     for (i = 1; i <= 5; i++) {
-      if (a[i] == true) {
-        for (hand[i] = EMPTY; hand[i] == EMPTY;) {
+      if (a[pNum, i] == true) {
+        for (hand[pNum, i] = EMPTY; hand[pNum, i] == EMPTY;) {
           n = Random.Range(0, 52);            /* これが選ばれたカード。       */
           if (card[n] == true) {       /* 「残っている」だったら       */
-            hand[i] = n;            /* そのカードを hand[i] に代入、*/
+            hand[pNum, i] = n;            /* そのカードを hand[i] に代入、*/
             card[n] = false;           /* 「残っていない」に変える     */
           }
         }
@@ -179,16 +237,16 @@ public class PokerTest : MonoBehaviour {
   }
   /* 手札の出力。非常にシンプルにしてある。ここだけを変えることも可能。hand[i] */
   /* の値は i 番目のカードを意味する。値とカードの関係は冒頭のコメントを参照。 */
-  string printhands() {
+  string printhands(int p) {
     int i, y;
     string print = "";
 
     for (i = 1; i <= 5; i++) {  /* カードの数（ランク）を表示 */
-      if (hand[i] == JOKER) {
+      if (hand[p, i] == JOKER) {
         print += " ? ";          /* ジョーカーはランクの位置に「?」を書く */
       }
       else {
-        y = hand[i] % 13;       /* これがカードの数（ランク）を示す */
+        y = hand[p, i] % 13;       /* これがカードの数（ランク）を示す */
         if (y == 0) {               /* 数（ランク）の表示 */
           print += " A ";
         }
@@ -209,11 +267,11 @@ public class PokerTest : MonoBehaviour {
     print += "\n";
 
     for (i = 1; i <= 5; i++) {  /* カードのマーク（スート）を表示 */
-      if (hand[i] == JOKER) {     /* ジョーカーはスートの位置も「?」を書く */
+      if (hand[p, i] == JOKER) {     /* ジョーカーはスートの位置も「?」を書く */
         print += " ? ";
       }
       else {
-        y = hand[i] / 13;       /* これがカードのマーク（スート）を示す */
+        y = hand[p, i] / 13;       /* これがカードのマーク（スート）を示す */
         if (y == 0) {
           print += " S ";          /* スペード（のつもり）*/
         }
@@ -231,9 +289,15 @@ public class PokerTest : MonoBehaviour {
     print += "\n";
     Debug.Log(print);
 
-    for(int j = 0; j < 5; j++) {
-      playerHandsImage[j].sprite = Resources.Load<Sprite>("images/trump/"+hand[j+1].ToString());
-      Debug.Log("images/trump/" + hand[j+1]);
+    for (int j = 0; j < 5; j++) {
+      if (p == PLAYER) {
+        playerHandsImage[j].sprite = Resources.Load<Sprite>("images/trump/" + hand[p, j + 1].ToString());
+        Debug.Log("images/trump/" + hand[p, j + 1]);
+      }
+      else if (p == ENEMY) {
+        enemyHandsImage[j].sprite = Resources.Load<Sprite>("images/trump/" + hand[p, j + 1].ToString());
+        Debug.Log("images/trump/" + hand[p, j + 1]);
+      }
     }
 
     return print;
@@ -244,30 +308,30 @@ public class PokerTest : MonoBehaviour {
   /* 普通のカードで順に置き換えつつ analyse() を呼んで、返ってきた倍率のうちで */
   /* 最高のものを返す。ジョーカーがなければ、analyse() を呼んで、その返して    */
   /* きた値（倍率）を返すだけ。                                                */
-  int analyse0() {
+  int analyse0(int p) {
     int i, j, x, get = 0;
     bool joker;
 
     joker = false;
     for (i = 1; i <= 5; i++) {
-      if (hand[i] == JOKER) {
+      if (hand[p, i] == JOKER) {
         joker = true;
         get = 0;
         for (j = 0; j < 52; j++) {
-          hand[i] = j;
-          x = analyse();
+          hand[p, i] = j;
+          x = analyse(p);
           if (x > get) {
             get = x;
           }
         }
-        hand[i] = JOKER;    /* 置き換えたのをジョーカーに戻しておく */
+        hand[p, i] = JOKER;    /* 置き換えたのをジョーカーに戻しておく */
       }
     }
     if (joker == true) {
       return get;
     }
     else {
-      return analyse();
+      return analyse(p);
     }
   }
 
@@ -276,7 +340,7 @@ public class PokerTest : MonoBehaviour {
   /* 手札の役の解析を行ない、役に応じた倍率を返す。ジョーカーは手札に含まれて  */
   /* いないと仮定しているが、ジョーカーを普通のカードで置き換えた場合も扱うの  */
   /* で、同じカードが二枚ある場合にも対応している！                            */
-  int analyse() {
+  int analyse(int p) {
     int i, j, x, y;
     int samerank, sequence, sequence2, get;
     bool flush;
@@ -286,7 +350,7 @@ public class PokerTest : MonoBehaviour {
     samerank = 0;
     for (i = 1; i <= 5; i++) {
       for (j = i + 1; j <= 5; j++) {
-        if (hand[i] % 13 == hand[j] % 13) {
+        if (hand[p, i] % 13 == hand[p, j] % 13) {
           samerank++;
         }
       }
@@ -299,7 +363,7 @@ public class PokerTest : MonoBehaviour {
     if (samerank == 0) {
       for (i = 1; i <= 5; i++) {
         for (j = i + 1; j <= 5; j++) {
-          x = hand[i] % 13 - hand[j] % 13;
+          x = hand[p, i] % 13 - hand[p, j] % 13;
           if (x == 1 || x == -1) {
             sequence++;
           }
@@ -309,17 +373,17 @@ public class PokerTest : MonoBehaviour {
 
       for (i = 1; i <= 5; i++) {
         for (j = i + 1; j <= 5; j++) {
-          if (hand[i] % 13 == 0) {    /* A は 13 と置き換えてから */
+          if (hand[p, i] % 13 == 0) {    /* A は 13 と置き換えてから */
             x = 13;
           }
           else {
-            x = hand[i] % 13;
+            x = hand[p, i] % 13;
           }
-          if (hand[j] % 13 == 0) {
+          if (hand[p, j] % 13 == 0) {
             y = 13;
           }
           else {
-            y = hand[j] % 13;
+            y = hand[p, j] % 13;
           }
           if (x == y + 1 || x + 1 == y) {     /* 上と同じことを行なう */
             sequence2++;                    /* （細部は違うけど）   */
@@ -333,7 +397,7 @@ public class PokerTest : MonoBehaviour {
     /* （素直に && で四つの条件をつなげたほうがよかったかも） */
     flush = true;
     for (i = 1; i <= 4; i++) {
-      if (hand[i] / 13 != hand[i + 1] / 13) {
+      if (hand[p, i] / 13 != hand[p, i + 1] / 13) {
         flush = false;
       }
     }
@@ -411,5 +475,5 @@ public class PokerTest : MonoBehaviour {
     }
     else return "ノーペアです";
   }
-  
+
 }
