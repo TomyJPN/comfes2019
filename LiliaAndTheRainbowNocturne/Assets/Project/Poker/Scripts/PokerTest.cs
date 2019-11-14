@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using System.Linq;
 using PokerSystem;
 using System.Text;
+using UnityEngine.EventSystems;
 
 public class PokerTest : MonoBehaviour {
 	InputField inputField;
@@ -14,6 +15,9 @@ public class PokerTest : MonoBehaviour {
 
 	[SerializeField]
 	List<Image> playerHandsImage = new List<Image>();
+
+	[SerializeField]
+	List<GameObject> CardPointerImage = new List<GameObject>();
 
 	[SerializeField]
 	List<Image> enemyHandsImage = new List<Image>();
@@ -57,6 +61,8 @@ public class PokerTest : MonoBehaviour {
 	}
 
 	int clickedBtnCode;
+	bool isChanging;	//交換ターンか
+	PointerEventData pointer;
 
 	// Start is called before the first frame update
 	void Start() {
@@ -67,6 +73,9 @@ public class PokerTest : MonoBehaviour {
 		enemyCoinText = uiText.transform.Find("EnemyCoinText").GetComponent<Text>();
 		enemyStackText = uiText.transform.Find("EnemyStackText").GetComponent<Text>();
 		tableCoinText= uiText.transform.Find("TableCoinText").GetComponent<Text>();
+
+		// ポインタ（マウス/タッチ）イベントに関連するイベントの情報
+		pointer = new PointerEventData(EventSystem.current);
 
 		coin[PLAYER] = 0;
 		coin[ENEMY] = 0;
@@ -82,7 +91,7 @@ public class PokerTest : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update() {
-
+		if (isChanging) WaitCardChange();
 	}
 
 	IEnumerator Game() {
@@ -122,6 +131,9 @@ public class PokerTest : MonoBehaviour {
 
 		AppManager.Instance.viewMessage("交換");
 
+		isChanging = true;
+		yield return new WaitUntil(() => clickedBtnCode == 1);  //待ち
+		isChanging = false;
 
 		AppManager.Instance.viewMessage("2nd ベッティングラウンド");
 
@@ -307,6 +319,27 @@ public class PokerTest : MonoBehaviour {
 		stackMoney[role] = newCoin;
 		if (role == PLAYER) playerStackText.text = newCoin.ToString();
 		else enemyStackText.text = newCoin.ToString();
+	}
+
+	void WaitCardChange() {
+		// クリックしたら
+		if (Input.GetMouseButtonDown(0)) {
+			List<RaycastResult> results = new List<RaycastResult>();
+			// マウスポインタの位置にレイ飛ばし、ヒットしたものを保存
+			pointer.position = Input.mousePosition;
+			EventSystem.current.RaycastAll(pointer, results);
+			// ヒットしたUIの名前
+			foreach (RaycastResult target in results) {
+				Debug.Log(target.gameObject.name);
+				if (target.gameObject.tag == "card") {
+					GameObject image = CardPointerImage[int.Parse(target.gameObject.name)];
+					image.SetActive(!image.activeSelf);
+					Debug.Log("カード");
+					return;
+				}
+			}
+		}
+		return;
 	}
 
 	public void onDrawBtn() {
