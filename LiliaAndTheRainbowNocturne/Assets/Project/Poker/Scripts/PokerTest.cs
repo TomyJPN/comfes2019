@@ -56,6 +56,8 @@ public class PokerTest : MonoBehaviour {
 		other
 	}
 
+	int clickedBtnCode;
+
 	// Start is called before the first frame update
 	void Start() {
 		inputField = GetComponent<InputField>();
@@ -107,12 +109,24 @@ public class PokerTest : MonoBehaviour {
 		printhands(ENEMY);
 		infoText.text += printresult(analyse0(ENEMY));        /* 役を画面表示 */
 
-		AppManager.Instance.viewMessage("\n1st ベッティングラウンド");
+		AppManager.Instance.viewMessage("1st ベッティングラウンド");
 		bettingReturn = -1;
 		StartCoroutine(Betting(PLAYER));
 		while (bettingReturn == -1) {
 			yield return null;
 		}
+		tableCoin += stackMoney[PLAYER] + stackMoney[ENEMY];
+		tableCoinText.text = tableCoin.ToString();
+		IncreaseStack(-stackMoney[0], 0);   //ゼロ初期化
+		IncreaseStack(-stackMoney[1], 1);   //ゼロ初期化
+
+		AppManager.Instance.viewMessage("交換");
+
+
+		AppManager.Instance.viewMessage("2nd ベッティングラウンド");
+
+
+		AppManager.Instance.viewMessage("ショーダウン");
 
 		infoText.text += "掛け:" + tableCoin + " ,自分:" + coin[PLAYER] + " ,敵:" + coin[ENEMY];
 		AppManager.Instance.viewMessage("終了");
@@ -128,7 +142,9 @@ public class PokerTest : MonoBehaviour {
 		//チェック　ベット100　フォールド
 		Debug.Log("プレイヤー: f,b,c");
 		infoText.text += "\n" + GetRoleName(dealer) + "：フォルドorベットorチェック\n";
-		yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Alpha1));  //エンターまで待ち
+		clickedBtnCode = 0;
+		yield return new WaitUntil(() => clickedBtnCode == 1);  //待ち
+		clickedBtnCode = 0;
 		if (debugInput.text == "f") {
 			AppManager.Instance.viewMessage(GetRoleName(dealer)+"が降りた " + GetRoleName(noDealer)+"+"+tableCoin);
 			Fold(dealer, tableCoin);
@@ -140,12 +156,15 @@ public class PokerTest : MonoBehaviour {
 
 			//相手コールorレイズorフォールド
 			infoText.text += "\n"+GetRoleName(noDealer)+"：コールorレイズorフォルド\n";
-			yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Alpha2));  //エンターまで待ち
+			clickedBtnCode = 0;
+			yield return new WaitUntil(() => clickedBtnCode == 1);  //待ち
+			clickedBtnCode = 0;
 			if (debugInput.text == "c") {
 				//コール
-				AppManager.Instance.viewMessage("コール "+GetRoleName(noDealer)+"-" + bettingPrice);
-				IncreaseCoin(-bettingPrice, noDealer);
-				IncreaseStack(bettingPrice, noDealer);
+				int call = stackMoney[dealer] - stackMoney[noDealer];
+				AppManager.Instance.viewMessage("コール "+GetRoleName(noDealer)+"-" + call);
+				IncreaseCoin(-call, noDealer);
+				IncreaseStack(call, noDealer);
 				bettingReturn = (int)bettingReturnNum.call;
 				yield break;
 			}
@@ -172,7 +191,9 @@ public class PokerTest : MonoBehaviour {
 			AppManager.Instance.viewMessage("チェック");
 			infoText.text += "チェック\n";
 			infoText.text += GetRoleName(noDealer) + "：フォルドorベットorチェック\n";
-			yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Alpha2));  //エンターまで待ち
+			clickedBtnCode = 0;
+			yield return new WaitUntil(() => clickedBtnCode == 1);  //待ち
+			clickedBtnCode = 0;
 			if (debugInput.text == "f") {
 				//フォールド
 				tableCoin += stackMoney[PLAYER] + stackMoney[ENEMY];
@@ -199,12 +220,15 @@ public class PokerTest : MonoBehaviour {
 		//賭けループ
 		while (stackMoney[ENEMY]!=stackMoney[PLAYER]) {
 			infoText.text += "\n" + GetRoleName(better) + "：コールorレイズorフォルド\n";
-			yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Alpha2));  //エンターまで待ち
+			clickedBtnCode = 0;
+			yield return new WaitUntil(() => clickedBtnCode == 1);  //待ち
+			clickedBtnCode = 0;
 			if (debugInput.text == "c") {
 				//コール
-				AppManager.Instance.viewMessage("コール " + GetRoleName(better) + "-" + bettingPrice);
-				IncreaseCoin(-bettingPrice, better);
-				IncreaseStack(bettingPrice, better);
+				int call=stackMoney[InversionRole(better)]- stackMoney[better];
+				AppManager.Instance.viewMessage("コール " + GetRoleName(better) + "-" + call);
+				IncreaseCoin(-call, better);
+				IncreaseStack(call, better);
 				bettingReturn = (int)bettingReturnNum.call;
 				yield break;
 			}
@@ -227,10 +251,7 @@ public class PokerTest : MonoBehaviour {
 			}
 			better = InversionRole(better);
 		}
-		tableCoin = stackMoney[PLAYER] + stackMoney[ENEMY];
-		tableCoinText.text = tableCoin.ToString();
-		IncreaseStack(-stackMoney[0], 0);	//ゼロ初期化
-		IncreaseStack(-stackMoney[1], 1);	//ゼロ初期化
+		AppManager.Instance.viewMessage("不正な終了");
 		bettingReturn = 500;
 	}
 
@@ -290,6 +311,10 @@ public class PokerTest : MonoBehaviour {
 
 	public void onDrawBtn() {
 		StartCoroutine(Game());
+	}
+
+	public void onDebugBtn() {
+		clickedBtnCode = 1;
 	}
 
 	public void InputLogger() {
