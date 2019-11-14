@@ -24,6 +24,14 @@ public class PokerTest : MonoBehaviour {
 	[SerializeField]
 	Text infoText;
 
+	[SerializeField]
+	GameObject uiText;
+	Text playerCoinText;
+	Text playerStackText;
+	Text enemyCoinText;
+	Text enemyStackText;
+	Text tableCoinText;
+
 
 	//define
 	const int EMPTY = -1;
@@ -39,7 +47,7 @@ public class PokerTest : MonoBehaviour {
 	int[] stackMoney = new int[2];
 
 	int tableCoin = 0;
-	int bettingPrice = 100;
+	int bettingPrice = 10;
 	int bettingReturn;
 	enum bettingReturnNum {
 		fold,
@@ -52,9 +60,17 @@ public class PokerTest : MonoBehaviour {
 	void Start() {
 		inputField = GetComponent<InputField>();
 
+		playerCoinText = uiText.transform.Find("PlayerCoinText").GetComponent<Text>();
+		playerStackText = uiText.transform.Find("PlayerStackText").GetComponent<Text>();
+		enemyCoinText = uiText.transform.Find("EnemyCoinText").GetComponent<Text>();
+		enemyStackText = uiText.transform.Find("EnemyStackText").GetComponent<Text>();
+		tableCoinText= uiText.transform.Find("TableCoinText").GetComponent<Text>();
 
-		coin[PLAYER] = 250;
-		coin[ENEMY] = 250;
+		coin[PLAYER] = 0;
+		coin[ENEMY] = 0;
+		IncreaseCoin(250, PLAYER);
+		IncreaseCoin(250, ENEMY);
+
 		//int count = 0;
 		//foreach (Transform child in PlayerHands.transform) {
 		//  playerHandsImage.Add(child.GetComponent<Image>());
@@ -84,10 +100,10 @@ public class PokerTest : MonoBehaviour {
 		}
 		draw(PLAYER);
 		draw(ENEMY);
-		infoText.text += "-プレイヤー-\n";
+		infoText.text += "プレイヤー:";
 		printhands(PLAYER);
 		infoText.text += printresult(analyse0(PLAYER));        /* 役を画面表示 */
-		infoText.text += "\n-相手-\n";
+		infoText.text += "\n敵:";
 		printhands(ENEMY);
 		infoText.text += printresult(analyse0(ENEMY));        /* 役を画面表示 */
 
@@ -99,7 +115,7 @@ public class PokerTest : MonoBehaviour {
 		}
 
 		infoText.text += "掛け:" + tableCoin + " ,自分:" + coin[PLAYER] + " ,敵:" + coin[ENEMY];
-		Debug.Log("おわり");
+		AppManager.Instance.viewMessage("終了");
 
 	}
 
@@ -107,19 +123,19 @@ public class PokerTest : MonoBehaviour {
 		int noDealer = InversionRole(dealer);
 		stackMoney[0] = 0;
 		stackMoney[1] = 0;
+		bettingPrice = 10;
 
 		//チェック　ベット100　フォールド
 		Debug.Log("プレイヤー: f,b,c");
 		infoText.text += "\n" + GetRoleName(dealer) + "：フォルドorベットorチェック\n";
 		yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Alpha1));  //エンターまで待ち
 		if (debugInput.text == "f") {
-			tableCoin += stackMoney[PLAYER] + stackMoney[ENEMY];
 			AppManager.Instance.viewMessage(GetRoleName(dealer)+"が降りた " + GetRoleName(noDealer)+"+"+tableCoin);
 			Fold(dealer, tableCoin);
 		}
 		else if (debugInput.text == "b") {
-			coin[dealer] -= bettingPrice;
-			stackMoney[dealer] += bettingPrice;
+			IncreaseCoin(-bettingPrice, dealer);
+			IncreaseStack(bettingPrice, dealer);
 			AppManager.Instance.viewMessage("ベット " + GetRoleName(dealer) + "-" + bettingPrice);
 
 			//相手コールorレイズorフォールド
@@ -128,22 +144,23 @@ public class PokerTest : MonoBehaviour {
 			if (debugInput.text == "c") {
 				//コール
 				AppManager.Instance.viewMessage("コール "+GetRoleName(noDealer)+"-" + bettingPrice);
-				coin[noDealer] -= bettingPrice;
-				stackMoney[noDealer] += bettingPrice;
+				IncreaseCoin(-bettingPrice, noDealer);
+				IncreaseStack(bettingPrice, noDealer);
 				bettingReturn = (int)bettingReturnNum.call;
 				yield break;
 			}
 			else if (debugInput.text == "r") {
 				//レイズ
-				bettingPrice += 100;
+				bettingPrice += 10;
 				AppManager.Instance.viewMessage("レイズ " + GetRoleName(noDealer) + "-" + bettingPrice);
-				coin[noDealer] -= bettingPrice;
-				stackMoney[noDealer] += bettingPrice;
+				IncreaseCoin(-bettingPrice, noDealer);
+				IncreaseStack(bettingPrice, noDealer);
 				//賭けループへ↓
 			}
 			else if (debugInput.text == "f") {
 				//フォールド
 				tableCoin += stackMoney[PLAYER] + stackMoney[ENEMY];
+				tableCoinText.text = tableCoin.ToString();
 				AppManager.Instance.viewMessage(GetRoleName(noDealer) + "が降りた " + GetRoleName(dealer) + "+" + tableCoin);
 				Fold(noDealer, tableCoin);
 				bettingReturn = (int)bettingReturnNum.fold;
@@ -159,6 +176,7 @@ public class PokerTest : MonoBehaviour {
 			if (debugInput.text == "f") {
 				//フォールド
 				tableCoin += stackMoney[PLAYER] + stackMoney[ENEMY];
+				tableCoinText.text = tableCoin.ToString();
 				AppManager.Instance.viewMessage(GetRoleName(noDealer) + "が降りた " + GetRoleName(dealer) + "+" + tableCoin);
 				Fold(noDealer, tableCoin);
 				bettingReturn = (int)bettingReturnNum.fold;
@@ -166,8 +184,8 @@ public class PokerTest : MonoBehaviour {
 			}
 			else if (debugInput.text == "b") {
 				//ベット
-				coin[noDealer] -= bettingPrice;
-				stackMoney[noDealer] += bettingPrice;
+				IncreaseCoin(-bettingPrice, noDealer);
+				IncreaseStack(bettingPrice, noDealer);
 				AppManager.Instance.viewMessage("ベット " + GetRoleName(noDealer) + "-" + bettingPrice);
 				//賭けループへ↓
 			}
@@ -185,22 +203,23 @@ public class PokerTest : MonoBehaviour {
 			if (debugInput.text == "c") {
 				//コール
 				AppManager.Instance.viewMessage("コール " + GetRoleName(better) + "-" + bettingPrice);
-				coin[better] -= bettingPrice;
-				stackMoney[better] += bettingPrice;
+				IncreaseCoin(-bettingPrice, better);
+				IncreaseStack(bettingPrice, better);
 				bettingReturn = (int)bettingReturnNum.call;
 				yield break;
 			}
 			else if (debugInput.text == "r") {
 				//レイズ
-				bettingPrice += 100;
+				bettingPrice += 20;
 				AppManager.Instance.viewMessage("レイズ " + GetRoleName(better) + "-" + bettingPrice);
-				coin[better] -= bettingPrice;
-				stackMoney[better] += bettingPrice;
+				IncreaseCoin(-bettingPrice, better);
+				IncreaseStack(bettingPrice, better);
 				//賭けループへ↓
 			}
 			else if (debugInput.text == "f") {
 				//フォールド
 				tableCoin += stackMoney[PLAYER] + stackMoney[ENEMY];
+				tableCoinText.text = tableCoin.ToString();
 				AppManager.Instance.viewMessage(GetRoleName(better) + "が降りた " + GetRoleName(dealer) + "+" + tableCoin);
 				Fold(better, tableCoin);
 				bettingReturn = (int)bettingReturnNum.fold;
@@ -208,25 +227,32 @@ public class PokerTest : MonoBehaviour {
 			}
 			better = InversionRole(better);
 		}
+		tableCoin = stackMoney[PLAYER] + stackMoney[ENEMY];
+		tableCoinText.text = tableCoin.ToString();
+		IncreaseStack(-stackMoney[0], 0);	//ゼロ初期化
+		IncreaseStack(-stackMoney[1], 1);	//ゼロ初期化
 		bettingReturn = 500;
 	}
 
 	//アンティ
 	void Ante(int fee) {
-		coin[PLAYER] -= fee;
-		coin[ENEMY] -= fee;
+		IncreaseCoin(-fee, PLAYER);
+		IncreaseCoin(-fee, ENEMY);
 		tableCoin = fee * 2;
+		tableCoinText.text = tableCoin.ToString();
 	}
 
 	//フォルド
 	void Fold(int loser, int tableCoin) {
 		if (loser == PLAYER) {
-			coin[ENEMY] += tableCoin;
+			IncreaseCoin(tableCoin, ENEMY);
 		}
 		else if (loser == ENEMY) {
-			coin[PLAYER] += tableCoin;
+			IncreaseCoin(tableCoin, PLAYER);
 		}
-		else Debug.LogError("不正");
+		IncreaseStack(-stackMoney[PLAYER], PLAYER);
+		IncreaseStack(-stackMoney[ENEMY], ENEMY);
+		tableCoinText.text = "0";
 	}
 
 	int InversionRole(int role) {
@@ -236,6 +262,30 @@ public class PokerTest : MonoBehaviour {
 	string GetRoleName(int role) {
 		if (role == PLAYER) return "プレイヤー";
 		else return "敵";
+	}
+
+	/// <summary>
+	/// コインの変化+UI更新
+	/// </summary>
+	/// <param name="increase">増加量(減らす場合負)</param>
+	/// <param name="role">PLAYERorENEMY</param>
+	void IncreaseCoin(int increase, int role) {
+		int newCoin = coin[role] + increase;
+		coin[role] = newCoin;
+		if (role == PLAYER) playerCoinText.text = "プレイヤー：" + newCoin.ToString();
+		else enemyCoinText.text = "敵：" + newCoin.ToString();
+	}
+
+	/// <summary>
+	/// スタックコインの変化+UI更新
+	/// </summary>
+	/// <param name="increase">増加量(減らす場合負)</param>
+	/// <param name="role">PLAYERorENEMY</param>
+	void IncreaseStack(int increase, int role) {
+		int newCoin = stackMoney[role] + increase;
+		stackMoney[role] = newCoin;
+		if (role == PLAYER) playerStackText.text = newCoin.ToString();
+		else enemyStackText.text = newCoin.ToString();
 	}
 
 	public void onDrawBtn() {
