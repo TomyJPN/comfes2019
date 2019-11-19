@@ -132,10 +132,31 @@ public class PokerTest : MonoBehaviour {
 		AppManager.Instance.viewMessage("交換");
 
 		isChanging = true;
+		//交換リセット
+		for (int i = 1; i <= 5; i++) {
+			a[PLAYER, i] = false;
+			a[ENEMY, i] = false;
+		}
 		yield return new WaitUntil(() => clickedBtnCode == 1);  //待ち
 		isChanging = false;
+		draw(PLAYER);
+		printhands(PLAYER);
+		infoText.text += printresult(analyse0(PLAYER));        /* 役を画面表示 */
+		for(int i = 0; i < 5; i++) {
+			CardPointerImage[i].SetActive(false);
+		}
 
 		AppManager.Instance.viewMessage("2nd ベッティングラウンド");
+
+		bettingReturn = -1;
+		StartCoroutine(Betting(ENEMY));
+		while (bettingReturn == -1) {
+			yield return null;
+		}
+		tableCoin += stackMoney[PLAYER] + stackMoney[ENEMY];
+		tableCoinText.text = tableCoin.ToString();
+		IncreaseStack(-stackMoney[0], 0);   //ゼロ初期化
+		IncreaseStack(-stackMoney[1], 1);   //ゼロ初期化
 
 
 		AppManager.Instance.viewMessage("ショーダウン");
@@ -334,7 +355,7 @@ public class PokerTest : MonoBehaviour {
 				if (target.gameObject.tag == "card") {
 					GameObject image = CardPointerImage[int.Parse(target.gameObject.name)];
 					image.SetActive(!image.activeSelf);
-					Debug.Log("カード");
+					a[PLAYER, int.Parse(target.gameObject.name)+1] = !a[PLAYER, int.Parse(target.gameObject.name)+1];
 					return;
 				}
 			}
