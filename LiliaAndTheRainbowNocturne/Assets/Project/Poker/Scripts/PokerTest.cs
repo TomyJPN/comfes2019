@@ -36,6 +36,8 @@ public class PokerTest : MonoBehaviour {
 	Text enemyStackText;
 	Text tableCoinText;
 
+	[SerializeField]
+	List<Text> resultText = new List<Text>();
 
 	//define
 	const int EMPTY = -1;
@@ -47,6 +49,10 @@ public class PokerTest : MonoBehaviour {
 	int[,] hand = new int[2, 6];    /* 手札。hand[0] は使わない */
 	bool[,] a = new bool[2, 6];         /* hand[i] を新たにひくなら a[i] には true を、そうでなければ */
 										/* false を入れる。a[0] は使わない */
+	List<int> kickP = new List<int>();	//ドロー時の判定用キックカード
+	List<int> kickE = new List<int>();
+
+
 	int[] coin = new int[2]; //コイン
 	int[] stackMoney = new int[2];
 
@@ -82,6 +88,7 @@ public class PokerTest : MonoBehaviour {
 		IncreaseCoin(250, PLAYER);
 		IncreaseCoin(250, ENEMY);
 
+
 		//int count = 0;
 		//foreach (Transform child in PlayerHands.transform) {
 		//  playerHandsImage.Add(child.GetComponent<Image>());
@@ -95,14 +102,14 @@ public class PokerTest : MonoBehaviour {
 	}
 
 	IEnumerator Game() {
+		int[] get = new int[2];
+
 		infoText.text = "";
 
 
 		initcard(); //山札初期化
 
 		Ante(10); //アンティ
-
-		infoText.text += "掛け:" + tableCoin + " ,自分:" + coin[PLAYER] + " ,敵:" + coin[ENEMY];
 
 		//手札を引く
 		for (int i = 1; i <= 5; i++) {      /* 最初は五枚ひくので全部 YES */
@@ -111,12 +118,25 @@ public class PokerTest : MonoBehaviour {
 		}
 		draw(PLAYER);
 		draw(ENEMY);
-		infoText.text += "プレイヤー:";
+
 		printhands(PLAYER);
-		infoText.text += printresult(analyse0(PLAYER));        /* 役を画面表示 */
-		infoText.text += "\n敵:";
+		get[PLAYER] = analyse0(PLAYER);
+		resultText[PLAYER].text= printresult(get[PLAYER]);        /* 役を画面表示 */
+
 		printhands(ENEMY);
-		infoText.text += printresult(analyse0(ENEMY));        /* 役を画面表示 */
+		get[ENEMY] = analyse0(ENEMY);
+		resultText[ENEMY].text = printresult(get[ENEMY]);        /* 役を画面表示 */
+
+		infoText.text += "役:" + get[PLAYER] + "," + get[ENEMY];
+
+		if (get[PLAYER] > get[ENEMY]) {
+			infoText.text += "\n勝ち";
+		}else if(get[PLAYER] < get[ENEMY]) {
+			infoText.text += "\n負け";
+		}
+		else {
+			infoText.text+="\n同役判定:"+GetRoleName(analyseDraw(get[PLAYER]))+"の勝ち";
+		}
 
 		AppManager.Instance.viewMessage("1st ベッティングラウンド");
 		bettingReturn = -1;
@@ -141,7 +161,6 @@ public class PokerTest : MonoBehaviour {
 		isChanging = false;
 		draw(PLAYER);
 		printhands(PLAYER);
-		infoText.text += printresult(analyse0(PLAYER));        /* 役を画面表示 */
 		for(int i = 0; i < 5; i++) {
 			CardPointerImage[i].SetActive(false);
 		}
@@ -160,8 +179,14 @@ public class PokerTest : MonoBehaviour {
 
 
 		AppManager.Instance.viewMessage("ショーダウン");
+		get[PLAYER] = analyse0(PLAYER);
+		resultText[PLAYER].text = printresult(get[PLAYER]);        /* 役を画面表示 */
 
-		infoText.text += "掛け:" + tableCoin + " ,自分:" + coin[PLAYER] + " ,敵:" + coin[ENEMY];
+		get[ENEMY] = analyse0(ENEMY);
+		resultText[ENEMY].text = printresult(get[ENEMY]);        /* 役を画面表示 */
+
+		infoText.text += "役:" + get[PLAYER] + "," + get[ENEMY];
+
 		AppManager.Instance.viewMessage("終了");
 
 	}
@@ -315,7 +340,8 @@ public class PokerTest : MonoBehaviour {
 	}
 	string GetRoleName(int role) {
 		if (role == PLAYER) return "プレイヤー";
-		else return "敵";
+		else if (role == ENEMY) return "敵";
+		else return "???";
 	}
 
 	/// <summary>
@@ -480,6 +506,8 @@ public class PokerTest : MonoBehaviour {
 	/* まず大丈夫であろう。                                                     */
 	public void draw(int pNum) {
 		int i, n;
+		kickP = new List<int>();
+		kickE = new List<int>();
 
 		for (i = 1; i <= 5; i++) {
 			if (a[pNum, i] == true) {
@@ -489,6 +517,16 @@ public class PokerTest : MonoBehaviour {
 						hand[pNum, i] = n;            /* そのカードを hand[i] に代入、*/
 						card[n] = false;           /* 「残っていない」に変える     */
 					}
+				}
+			}
+		}
+		int tmp;
+		for(i = 1; i <= 5; i++) {
+			for(int j = 1; j <= 5; j++) {
+				if (CardStrength(hand[pNum, j],hand[pNum, i])==1) {
+					tmp = hand[pNum, j];
+					hand[pNum, j] = hand[pNum, i];
+					hand[pNum, i] = tmp;
 				}
 			}
 		}
@@ -610,6 +648,9 @@ public class PokerTest : MonoBehaviour {
 			for (j = i + 1; j <= 5; j++) {
 				if (hand[p, i] % 13 == hand[p, j] % 13) {
 					samerank++;
+					Debug.Log("判定：" + "[" + i + "," + j + "]" + (hand[p,i]%13 +1));
+					if (p == PLAYER) kickP.Add(hand[p, i] % 13 + 1);
+					else kickE.Add(hand[p, i] % 13 + 1);
 				}
 			}
 		}
@@ -702,36 +743,75 @@ public class PokerTest : MonoBehaviour {
 	/* いけないのが、めんどうな、というか、うまく書けていないところ。      */
 	string printresult(int get) {
 		if (get == 1) {
-			return "ワンペアです.  ";
+			return "ワンペア";
 		}
 		else if (get == 2) {
-			return "ツーペアです.  ";
+			return "ツーペア";
 		}
 		else if (get == 3) {
-			return "スリーカードです.  ";
+			return "スリーカード";
 		}
 		else if (get == 4) {
-			return "ストレートです!  ";
+			return "ストレート";
 		}
 		else if (get == 5) {
-			return "フラッシュです!  ";
+			return "フラッシュ";
 		}
 		else if (get == 10) {
-			return "フルハウスです!  ";
+			return "フルハウス";
 		}
 		else if (get == 20) {
-			return "フォーカードです!!  ";
+			return "フォーカード";
 		}
 		else if (get == 50) {
-			return "ストレートフラッシュです!!!  ";
+			return "ストレートフラッシュ";
 		}
 		else if (get == 100) {
-			return "ファイブカードです!!!!  ";
+			return "ファイブカード";
 		}
 		else if (get == 500) {
-			return "ロイヤルストレートフラッシュです!!!!!  ";
+			return "ロイヤルストレートフラッシュ";
 		}
-		else return "ノーペアです";
+		else return "ノーペア";
 	}
 
+
+	int analyseDraw(int get) {
+		if (get == 0) {	//ノーペア
+			for(int i = 5; i >= 0; i--) {	//ソート済みの強い順に比較
+				if (CardStrength(hand[PLAYER, i],hand[ENEMY, i])==1) return PLAYER;
+				else if (CardStrength(hand[PLAYER, i], hand[ENEMY, i]) == 2) return ENEMY;
+			}
+		}
+		if(get == 1) {	//ワンペア
+			if (CardStrength(kickP[0],kickE[0]) == 1) return PLAYER;
+			else if (CardStrength(kickP[0], kickE[0])==2) return ENEMY;
+			else {	//ペア同士の強弱を見て同じ数字なら
+				for (int i = 5; i >= 0; i--) {
+					if(hand[PLAYER, i] % 13 != kickE[0]) {	//ペア以外のカードの強弱
+						if (CardStrength(hand[PLAYER, i], hand[ENEMY, i]) == 1) return PLAYER;
+						else if (CardStrength(hand[PLAYER, i], hand[ENEMY, i]) == 2) return ENEMY;
+					}
+					
+				}
+			}
+		}
+
+		return -1;
+	}
+	/// <summary>
+	/// カードの強弱
+	/// </summary>
+	/// <param name="a">強い方か</param>
+	/// <param name="b">弱い方か</param>
+	/// <returns>aが強い:1, bが強い:2, 同じ:0</returns>
+	public int CardStrength(int a,int b) {
+		if (a % 13 == b % 13) return 0;
+
+		//エースが一番つよいので
+		if (a % 13 == 0) return 1;
+		else if (b % 13 == 0) return 2;
+		else if (a % 13 > b % 13) return 1;
+		else return 2;
+	}
 }
